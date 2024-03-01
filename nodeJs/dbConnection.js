@@ -7,6 +7,14 @@ const db = mysql.createConnection({
   database: 'javadb'
 });
 
+// const db = mysql.createConnection({
+//   host: 'localhost',
+//   user: 'root',
+//   password: 'Softsol@321',
+//   database: 'javadb'
+// });
+
+
 db.connect((err) => {
   if (err) {
     throw err;
