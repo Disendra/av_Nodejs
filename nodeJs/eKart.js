@@ -39,7 +39,7 @@ const upload = multer({
 router.use('/images', express.static(path.join(__dirname, 'assets/cart_Images')));
 
 router.get('/getCartData', (req, res) => {
-  const query = 'SELECT * FROM seller_Info';
+  const query = 'SELECT * FROM seller_Info ORDER BY posteddate DESC;';
 
   db.query(query, (error, results, fields) => {
     if (error) {

@@ -73,38 +73,4 @@ router.post('/login', (req, res) => {
   })
 })
 
-function handleQuery(sql, res) {
-  db.query(sql, (err, result) => {
-      if (err) {
-          return res.status(500).send({ status: false, message: err.message });
-      } else {
-          // Convert data to Excel format
-          const worksheet = XLSX.utils.json_to_sheet(result);
-          const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
-
-          // Send Excel file as response
-          res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-          res.setHeader('Content-Disposition', 'attachment; filename=data.xlsx');
-          res.end(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
-      }
-  });
-}
-
-router.get('/downloadLogintable', (req, res) => {
-  const sql = 'SELECT * FROM login_Data';
-  handleQuery(sql, res);
-});
-
-router.get('/downloadTodayLogin', (req, res) => {
-  const sql = "SELECT (@row_number:=@row_number + 1) AS slno, t.*, CONVERT_TZ(t.login_time, 'UTC', 'Asia/Kolkata') AS login_timeIST FROM login_Logs t CROSS JOIN (SELECT @row_number:=0) AS rn WHERE DATE(t.login_time) = CURDATE()";
-  handleQuery(sql, res);
-});
-
-router.get('/downloadLoginInfo', (req, res) => {
-  const sql = 'SELECT * FROM login_Logs';
-  handleQuery(sql, res);
-});
-
-
 module.exports = router
