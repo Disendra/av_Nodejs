@@ -10,7 +10,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const router = express.Router()
 
 router.post('/insertFeed', (req, res) => {
-  const { sender, title, description,link } = req.body
+  const { sender, title, description,link } = req.body;
   const createdDate = new Date()
 
   const data = { sender, title, description, createdDate,link }
