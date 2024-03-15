@@ -87,7 +87,6 @@ router.get('/downloadFeedBack', (req, res) => {
       return res.status(500).send({ status: false, message: err.message });
     } else {
       handleQuery(result, res);
-      console.log('Result:', result);
     }
   });
 });
