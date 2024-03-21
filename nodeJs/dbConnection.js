@@ -73,5 +73,3 @@ module.exports = pool;
 //   password: 'Yp6KGBD5CG8aaQL44cD0',
 //   database: 'b80vvfgdi6efpgtfiznc'
 // });
-
-
