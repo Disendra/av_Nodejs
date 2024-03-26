@@ -51,13 +51,13 @@ router.post('/login', (req, res) => {
       if (result.length === 0) {
         return res
           .status(404)
-          .send({ status: false, message: 'User not found' })
+          .send({ status: false, message: 'User not found, Pls signUp    ' })
       } else {
         const user = result[0]
         if (user.password !== password) {
           return res
             .status(401)
-            .send({ status: false, message: 'Invalid password' })
+            .send({ status: false, message: 'Invalid password,Pls retry    ' })
         } else {
           // User authenticated, insert login details
           db.query(sqlInsert, [emailId], (errInsert, resultInsert) => {

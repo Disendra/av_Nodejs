@@ -35,7 +35,74 @@ router.get('/getCartData', (req, res) => {
 });
 
 
+router.get('/getUploadData/:emailId', (req, res) => {
+  const emailId = req.params.emailId; // Access emailId from URL parameter
+
+  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? ORDER BY posteddate DESC;';
+
+  console.log(sql);
+
+  db.query(sql, [emailId], (err, results) => {
+    if (err) {
+      console.error('Error fetching records:', err);
+      res.status(500).json({ error: 'Error fetching records' });
+    } else {
+      console.log('Fetched records successfully');
+      return res.send({ status: true, records: results, message: 'Details Fetched Successfully' });
+    }
+  });
+});
+
+
+router.post('/deleteCartRecords', (req, res) => {
+  const { emailId,title,postedDate } = req.body; // Access email from request body
+
+  const sql = 'DELETE FROM seller_Info WHERE emailId = ? AND title = ? AND postedDate = ?';
+
+  db.query(sql, [emailId,title,postedDate], (err, result) => {
+    if (err) {
+      console.error('Error deleting records:', err);
+      res.status(500).json({ error: 'Error deleting records' });
+    } else {
+      console.log('Deleted records successfully');
+      const affectedRows = result ? result.affectedRows : 0;
+      res.json({ status: true, affectedRows, message: 'Records Deleted Successfully' });
+    }
+  });
+});
+
 const upload = multer({ storage: multer.memoryStorage() });
+
+router.post('/updateCart', upload.single('image'), (req, res) => {
+  const { emailId, title, description, location, mobileNumber, price,slNo } = req.body;
+   
+  // Handle file upload here
+  const imageBuffer = req.file.buffer;
+  const imageName = req.file.originalname;
+
+  uploadImageToS3(imageBuffer, imageName)
+    .then((imageUrl) => {
+      console.log('Image uploaded successfully:', imageUrl);
+      const imagePath = imageUrl;
+      const postedDate = new Date();
+      const data = [ emailId, title, description, location, mobileNumber, price, postedDate, imagePath,slNo ];
+       console.log(data);
+      const sql = 'UPDATE seller_Info SET emailId = ?, title = ?, description = ?, location = ?, mobileNumber = ?, price = ?,postedDate = ?,imagePath = ? WHERE slNo = ?';
+    
+      db.query(sql, data, (err, result) => {
+        if (err) {
+          console.error('Error inserting seller info:', err);
+          return res.status(500).json({ error: 'Error inserting seller info' });
+        }
+        return res.json({ status: true, message: 'Seller Information Inserted Successfully' });
+      });
+    })
+    .catch((err) => {
+      console.error('Error uploading image:', err);
+      res.status(500).json({ error: 'Error uploading image' });
+    });
+});
+
 
 router.post('/insertCart', upload.single('image'), (req, res) => {
   const { emailId, title, description, location, mobileNumber, price } = req.body;
