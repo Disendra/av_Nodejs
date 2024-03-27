@@ -7,10 +7,10 @@ const router = express.Router()
 
 
 router.post('/insertData', (req, res) => {
-  const { emailId, password, role } = req.body
+  const {userName, emailId, password, role } = req.body;
   const createdDate = new Date()
 
-  const data = { emailId, password, role, createdDate }
+  const data = {userName, emailId, password, role, createdDate }
 
   const sql = 'INSERT INTO login_Data SET ?'
 
@@ -40,7 +40,7 @@ router.post('/login', (req, res) => {
     return res.status(400).send({ message: 'Email and password are required' })
   }
 
-  const sqlSelect = 'SELECT emailId, password FROM login_Data WHERE emailId = ?'
+  const sqlSelect = 'SELECT userName, emailId, password FROM login_Data WHERE emailId = ?'
   const sqlInsert =
     'INSERT INTO login_Logs (emailId, login_time) VALUES (?, NOW())'
 
@@ -64,7 +64,7 @@ router.post('/login', (req, res) => {
             if (errInsert) {
               return res.status(500).send({ message: errInsert.message })
             } else {
-              res.send({ status: true, message: 'Login Successful' })
+              res.send({ status: true, records: result , message: 'Login Successful' })
             }
           })
         }

@@ -74,38 +74,61 @@ router.post('/deleteCartRecords', (req, res) => {
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/updateCart', upload.single('image'), (req, res) => {
-  const { emailId, title, description, location, mobileNumber, price,slNo } = req.body;
-   
-  // Handle file upload here
-  const imageBuffer = req.file.buffer;
-  const imageName = req.file.originalname;
+  const { emailId, title, description, location, mobileNumber, price, slNo } = req.body;
 
-  uploadImageToS3(imageBuffer, imageName)
-    .then((imageUrl) => {
-      console.log('Image uploaded successfully:', imageUrl);
-      const imagePath = imageUrl;
-      const postedDate = new Date();
-      const data = [ emailId, title, description, location, mobileNumber, price, postedDate, imagePath,slNo ];
-       console.log(data);
-      const sql = 'UPDATE seller_Info SET emailId = ?, title = ?, description = ?, location = ?, mobileNumber = ?, price = ?,postedDate = ?,imagePath = ? WHERE slNo = ?';
-    
-      db.query(sql, data, (err, result) => {
-        if (err) {
-          console.error('Error inserting seller info:', err);
-          return res.status(500).json({ error: 'Error inserting seller info' });
-        }
-        return res.json({ status: true, message: 'Seller Information Inserted Successfully' });
+  let imagePath = null; // Initialize imagePath to null
+
+  // If a file is uploaded, store its path
+  if (req.file) {
+    const imageBuffer = req.file.buffer;
+    const imageName = req.file.originalname;
+
+    uploadImageToS3(imageBuffer, imageName)
+      .then((imageUrl) => {
+        console.log('Image uploaded successfully:', imageUrl);
+        imagePath = imageUrl; // Update imagePath with the new image path
+        updateSellerInfo();
+      })
+      .catch((err) => {
+        console.error('Error uploading image:', err);
+        return res.status(500).json({ error: 'Error uploading image' });
       });
-    })
-    .catch((err) => {
-      console.error('Error uploading image:', err);
-      res.status(500).json({ error: 'Error uploading image' });
+  } else {
+    // If no file is uploaded, retrieve the previous imagePath from the database
+    const sqlSelectImagePath = 'SELECT imagePath FROM seller_Info WHERE slNo = ?';
+    db.query(sqlSelectImagePath, [slNo], (err, result) => {
+      if (err) {
+        console.error('Error fetching previous image path:', err);
+        return res.status(500).json({ error: 'Error fetching previous image path' });
+      }
+      if (result.length > 0) {
+        imagePath = result[0].imagePath; // Retrieve the previous imagePath
+      }
+      updateSellerInfo();
     });
+  }
+
+  function updateSellerInfo() {
+    const postedDate = new Date();
+    const data = [emailId, title, description, location, mobileNumber, price, postedDate, imagePath, slNo];
+    console.log(data);
+    const sql = 'UPDATE seller_Info SET emailId = ?, title = ?, description = ?, location = ?, mobileNumber = ?, price = ?,postedDate = ?,imagePath = ? WHERE slNo = ?';
+
+    db.query(sql, data, (err, result) => {
+      if (err) {
+        console.error('Error inserting seller info:', err);
+        return res.status(500).json({ error: 'Error inserting seller info' });
+      }
+      return res.json({ status: true, message: 'Seller Information Inserted Successfully' });
+    });
+  }
 });
 
 
+
+
 router.post('/insertCart', upload.single('image'), (req, res) => {
-  const { emailId, title, description, location, mobileNumber, price } = req.body;
+  const { emailId, title, description, location, mobileNumber, price, userName } = req.body;
 
   // Handle file upload here
   const imageBuffer = req.file.buffer;
@@ -116,7 +139,7 @@ router.post('/insertCart', upload.single('image'), (req, res) => {
       console.log('Image uploaded successfully:', imageUrl);
       const imagePath = imageUrl;
       const postedDate = new Date();
-      const data = { emailId, title, description, location, mobileNumber, price, postedDate, imagePath };
+      const data = { emailId, title, description, location, mobileNumber, price, postedDate, imagePath, userName };
        console.log(data);
       const sql = 'INSERT INTO seller_Info SET ?';
     
