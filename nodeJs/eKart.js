@@ -20,7 +20,7 @@ AWS.config.update({
 // Create an S3 instance
 const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
-  const sql = 'SELECT * FROM seller_Info ORDER BY posteddate DESC;';
+  const sql = 'SELECT * FROM seller_Info ORDER BY posteddate ASC;';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -38,7 +38,7 @@ router.get('/getCartData', (req, res) => {
 router.get('/getUploadData/:emailId', (req, res) => {
   const emailId = req.params.emailId; // Access emailId from URL parameter
 
-  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? ORDER BY posteddate DESC;';
+  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? ORDER BY posteddate ASC;';
 
   console.log(sql);
 
