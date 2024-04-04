@@ -20,7 +20,7 @@ AWS.config.update({
 // Create an S3 instance
 const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
-  const sql = 'SELECT * FROM seller_Info ORDER BY posteddate ASC;';
+  const sql = 'SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != \'soldOut\' ORDER BY posteddate ASC;';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -38,8 +38,7 @@ router.get('/getCartData', (req, res) => {
 router.get('/getUploadData/:emailId', (req, res) => {
   const emailId = req.params.emailId; // Access emailId from URL parameter
 
-  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? ORDER BY posteddate ASC;';
-
+  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY posteddate ASC;';
   console.log(sql);
 
   db.query(sql, [emailId], (err, results) => {
@@ -64,9 +63,9 @@ router.post('/deleteCartRecords', (req, res) => {
       console.error('Error deleting records:', err);
       res.status(500).json({ error: 'Error deleting records' });
     } else {
-      console.log('Deleted records successfully');
+      console.log('Deleted Ad successfully');
       const affectedRows = result ? result.affectedRows : 0;
-      res.json({ status: true, affectedRows, message: 'Records Deleted Successfully' });
+      res.json({ status: true, affectedRows, message: 'Deleted Ad successfully' });
     }
   });
 });
@@ -119,12 +118,28 @@ router.post('/updateCart', upload.single('image'), (req, res) => {
         console.error('Error inserting seller info:', err);
         return res.status(500).json({ error: 'Error inserting seller info' });
       }
-      return res.json({ status: true, message: 'Seller Information Inserted Successfully' });
+      return res.json({ status: true, message: 'Ad posted successfully' });
     });
   }
 });
 
 
+router.post('/soldOutProduct', (req, res) => {
+  const { productStatus, slNo } = req.body;
+  console.log(req.body);
+  const sql = 'UPDATE seller_Info SET productStatus = ? WHERE slNo = ?';
+  db.query(sql, [productStatus, slNo], (err, result) => {
+    if (err) {
+      console.error('Error updating product status:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    else {
+    return res.json({ status: true, message: 'Product status updated successfully' });
+    }
+  });
+});
+
+  
 
 
 router.post('/insertCart', upload.single('image'), (req, res) => {
@@ -148,7 +163,7 @@ router.post('/insertCart', upload.single('image'), (req, res) => {
           console.error('Error inserting seller info:', err);
           return res.status(500).json({ error: 'Error inserting seller info' });
         }
-        return res.json({ status: true, message: 'Seller Information Inserted Successfully' });
+        return res.json({ status: true, message: 'Ad posted successfully' });
       });
     })
     .catch((err) => {

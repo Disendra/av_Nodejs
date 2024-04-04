@@ -9,6 +9,8 @@ const eKart = require('./eKart');
 const feedBack = require('./feedBack.js');
 const download = require('./download_reports')
 const bussinessCard = require('./bussiness-card.js')
+const contactUs = require('./contactUs.js');
+const profileInfo = require('./profile_Info.js');
 const app = express();
 const port = 3000;
 app.use(express.json());
@@ -21,6 +23,8 @@ app.use('/',eKart);
 app.use('/',feedBack);
 app.use('/',download);
 app.use('/',bussinessCard);
+app.use('/',contactUs);
+app.use('/',profileInfo);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

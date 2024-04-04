@@ -1,10 +1,14 @@
 // routes.js
 const express = require('express')
-const db = require('./dbConnection')
+const db = require('./dbConnection');
+const crypto = require('crypto');
 const XLSX = require('xlsx');
 
 const router = express.Router()
 
+function generateSessionId() {
+  return crypto.randomBytes(20).toString('hex');
+}
 
 router.post('/insertData', (req, res) => {
   const {userName, emailId, password, role } = req.body;
@@ -13,22 +17,17 @@ router.post('/insertData', (req, res) => {
   const data = {userName, emailId, password, role, createdDate }
 
   const sql = 'INSERT INTO login_Data SET ?'
-
   db.query(sql, data, (err, result) => {
     if (err) {
       // Check if the error is due to duplicate entry
       if (err.code === 'ER_DUP_ENTRY') {
-        return res
-          .status(400)
-          .send({
-            status: false,
-            message: 'User with this email already exists'
-          })
+        return res.status(400).send({ status: false,message: 'User with this email already exists'})
       } else {
         return res.status(500).send({ status: false, message: err.message })
       }
     } else {
-      return res.send({ status: true, message: 'User created Successfully' })
+      const sessionId = generateSessionId();
+      return res.send({ status: true, sessionId : sessionId, message: 'User created Successfully' })
     }
   })
 })
@@ -64,7 +63,9 @@ router.post('/login', (req, res) => {
             if (errInsert) {
               return res.status(500).send({ message: errInsert.message })
             } else {
-              res.send({ status: true, records: result , message: 'Login Successful' })
+              const sessionId = generateSessionId();
+              // saveSessionIdInDatabase(user.id, sessionId);
+              res.send({ status: true, records: result , sessionId : sessionId, message: 'Login Successful' })
             }
           })
         }

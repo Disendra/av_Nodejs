@@ -10,7 +10,7 @@ const mysql = require('mysql');
 
 
 const dbConfig = {
-  connectionLimit: 10, // Adjust according to your needs
+  connectionLimit: 100, // Adjust according to your needs
   host: 'b80vvfgdi6efpgtfiznc-mysql.services.clever-cloud.com',
   user: 'uykl1sm13wtl0tsu',
   password: 'Yp6KGBD5CG8aaQL44cD0',
