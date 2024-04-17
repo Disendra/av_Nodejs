@@ -16,16 +16,24 @@ function sendMail(personName, emailId, mobileNumber, subject, message) {
         }
     });
 
+   
+    // Check for undefined values and provide default values if they are undefined
+    const name = personName || 'Unknown';
+    const email = emailId || 'Unknown';
+    const mobile = mobileNumber || 'Unknown';
+    const sub = subject || 'No subject';
+    const msg = message || 'No message';
+
     const options = {
         from: 'AV-Project',
         to: 'gdisendra@gmail.com,Rgbavuniverse@gmail.com',
         subject: "Contact Us Notification",
         html: `<h1>Hello, Somebody tried to contact Us</h1>
-            <p>Person Name: ${personName}</p>
-            <p>Email: ${emailId}</p>
-            <p>Mobile Number: ${mobileNumber}</p>
-            <p>Subject: ${subject}</p>
-            <p>Message: ${message}</p>
+            <p>Person Name: ${name}</p>
+            <p>Email: ${email}</p>
+            <p>Mobile Number: ${mobile}</p>
+            <p>Subject: ${sub}</p>
+            <p>Message: ${msg}</p>
         `
     };
 

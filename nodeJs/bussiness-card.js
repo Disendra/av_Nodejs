@@ -23,4 +23,4 @@ router.get('/getBussinessCard/:emailId', (req, res) => {
     });
   });
   
-  module.exports = router
+  module.exports = router;
