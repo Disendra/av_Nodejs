@@ -20,7 +20,7 @@ AWS.config.update({
 // Create an S3 instance
 const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
-  const sql = 'SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != \'soldOut\' ORDER BY posteddate ASC;';
+  const sql = 'SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != \'soldOut\' ORDER BY postedDate DESC;';
 
   db.query(sql, (err, results) => {
     if (err) {
@@ -38,7 +38,7 @@ router.get('/getCartData', (req, res) => {
 router.get('/getUploadData/:emailId', (req, res) => {
   const emailId = req.params.emailId; // Access emailId from URL parameter
 
-  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY posteddate ASC;';
+  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY postedDate DESC;';
   console.log(sql);
 
   db.query(sql, [emailId], (err, results) => {
@@ -65,7 +65,7 @@ router.post('/deleteCartRecords', (req, res) => {
     } else {
       console.log('Deleted Ad successfully');
       const affectedRows = result ? result.affectedRows : 0;
-      res.json({ status: true, affectedRows, message: 'Deleted Ad successfully' });
+      res.json({ status: true, affectedRows, message: 'Ad successfully deleted' });
     }
   });
 });
@@ -118,7 +118,7 @@ router.post('/updateCart', upload.single('image'), (req, res) => {
         console.error('Error inserting seller info:', err);
         return res.status(500).json({ error: 'Error inserting seller info' });
       }
-      return res.json({ status: true, message: 'Ad posted successfully' });
+      return res.json({ status: true, message: 'Details updated successfully' });
     });
   }
 });
@@ -134,7 +134,7 @@ router.post('/soldOutProduct', (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }
     else {
-    return res.json({ status: true, message: 'Product status updated successfully' });
+    return res.json({ status: true, message: 'Product status updated successfully,The product will no longer be displayed on the website' });
     }
   });
 });
