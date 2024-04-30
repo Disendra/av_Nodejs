@@ -1,25 +1,18 @@
-// const mysql = require('mysql');
-const mysql = require('mysql');
-
-// const db = mysql.createConnection({
-//   host: 'mydb.cfkaemm06o10.us-east-1.rds.amazonaws.com',
-//   user: 'admin',
-//   password: 'Disendra',
-//   database: 'javadb'
-// });
-
+const mysql = require('mysql2');
 
 const dbConfig = {
-  connectionLimit: 100, // Adjust according to your needs
-  host: 'b80vvfgdi6efpgtfiznc-mysql.services.clever-cloud.com',
-  user: 'uykl1sm13wtl0tsu',
-  password: 'Yp6KGBD5CG8aaQL44cD0',
-  database: 'b80vvfgdi6efpgtfiznc'
+  host: 'avdb.c3yymiu8gewq.us-east-1.rds.amazonaws.com',
+  user: 'avCharms',
+  password: 'avCharms2024',
+  database: 'javadb',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
 const pool = mysql.createPool(dbConfig);
 
-// Attempt to reconnect if the connection is lost
+// Attempt to handle connection loss and reconnect
 pool.on('connection', function (connection) {
   console.log('New connection established');
 
@@ -27,12 +20,17 @@ pool.on('connection', function (connection) {
     console.error('MySQL error', err);
     if (err.code === 'PROTOCOL_CONNECTION_LOST') {
       console.log('Attempting to reconnect...');
-      pool.getConnection(function (error, newConnection) {
+      // Remove the current connection from the pool
+      pool.removeConnection(connection);
+      // Create a new connection and add it to the pool
+      const newConnection = mysql.createConnection(dbConfig);
+      pool.addConnection(newConnection);
+      // Retry the query on the new connection
+      newConnection.connect(function (error) {
         if (error) {
           console.error('Failed to reconnect:', error);
         } else {
           console.log('Reconnected successfully');
-          connection = newConnection;
         }
       });
     } else {
@@ -42,7 +40,6 @@ pool.on('connection', function (connection) {
 });
 
 module.exports = pool;
-
 
 
 // // const db = mysql.createConnection({

@@ -20,28 +20,12 @@ AWS.config.update({
 // Create an S3 instance
 const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
-  const sql = 'SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != \'soldOut\' ORDER BY postedDate DESC;';
+  const offset = parseInt(req.query.offset) || 0; // Default offset is 0
+  const limit = 5;
+  
+  const sql = `SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != 'soldOut' ORDER BY postedDate DESC LIMIT ?, ?;`;
 
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error('Error fetching records:', err);
-      res.status(500).json({ error: 'Error fetching records' });
-    } else {
-      console.log('Fetched records successfully');
-      return res.send({ status: true, records: results, message: 'Details Fetched Successfully'
-    });
-    }
-  });
-});
-
-
-router.get('/getUploadData/:emailId', (req, res) => {
-  const emailId = req.params.emailId; // Access emailId from URL parameter
-
-  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY postedDate DESC;';
-  console.log(sql);
-
-  db.query(sql, [emailId], (err, results) => {
+  db.query(sql, [offset, limit], (err, results) => {
     if (err) {
       console.error('Error fetching records:', err);
       res.status(500).json({ error: 'Error fetching records' });
@@ -52,6 +36,23 @@ router.get('/getUploadData/:emailId', (req, res) => {
   });
 });
 
+
+router.get('/getUploadData/:emailId', (req, res) => {
+  const emailId = req.params.emailId; // Get emailId from URL parameter
+  const offset = parseInt(req.query.offset) || 0; // Default offset is 0
+  const limit = 5;
+  
+  const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY postedDate DESC LIMIT ?, ?;';
+  
+  db.query(sql, [emailId, offset, limit], (err, results) => {
+    if (err) {
+      console.error('Error fetching records:', err);
+      return res.status(500).json({ error: 'Error fetching records' });
+    }
+    console.log('Fetched records successfully');
+    return res.json({ status: true, records: results, message: 'Details Fetched Successfully' });
+  });
+});
 
 router.post('/deleteCartRecords', (req, res) => {
   const { emailId,title,postedDate } = req.body; // Access email from request body
