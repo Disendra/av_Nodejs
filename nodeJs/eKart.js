@@ -17,15 +17,22 @@ AWS.config.update({
   endpoint: 'https://cellar-c2.services.clever-cloud.com'
 });
 
-// Create an S3 instance
-const s3 = new AWS.S3();
 router.get('/getCartData', (req, res) => {
-  const offset = parseInt(req.query.offset) || 0; // Default offset is 0
-  const limit = 5;
-  
-  const sql = `SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != 'soldOut' ORDER BY postedDate DESC LIMIT ?, ?;`;
+  const offset = parseInt(req.query.offset) || 0;
+  const limit = 6;
+  const searchText = req.query.searchText || ''; 
+  let sql;
+  let params;
 
-  db.query(sql, [offset, limit], (err, results) => {
+  if (searchText) {
+    sql = `SELECT * FROM seller_Info WHERE (productStatus IS NULL OR productStatus != 'soldOut') AND title LIKE ? ORDER BY postedDate DESC LIMIT ?, ?;`;
+    params = [`%${searchText}%`, offset, limit];
+  } else {
+    sql = `SELECT * FROM seller_Info WHERE productStatus IS NULL OR productStatus != 'soldOut' ORDER BY postedDate DESC LIMIT ?, ?;`;
+    params = [offset, limit];
+  }
+
+  db.query(sql, params, (err, results) => {
     if (err) {
       console.error('Error fetching records:', err);
       res.status(500).json({ error: 'Error fetching records' });
@@ -37,9 +44,12 @@ router.get('/getCartData', (req, res) => {
 });
 
 
+
+
+
 router.get('/getUploadData/:emailId', (req, res) => {
-  const emailId = req.params.emailId; // Get emailId from URL parameter
-  const offset = parseInt(req.query.offset) || 0; // Default offset is 0
+  const emailId = req.params.emailId;
+  const offset = parseInt(req.query.offset) || 0;
   const limit = 5;
   
   const sql = 'SELECT * FROM seller_Info WHERE emailId = ? AND (productStatus IS NULL OR productStatus != \'soldOut\') ORDER BY postedDate DESC LIMIT ?, ?;';
