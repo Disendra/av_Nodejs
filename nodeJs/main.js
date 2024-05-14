@@ -12,6 +12,7 @@ const bussinessCard = require('./bussiness-card.js')
 const contactUs = require('./contactUs.js');
 const profileInfo = require('./profile_Info.js');
 const community = require('./community.js');
+const socialSignUp = require('./socialLogin.js');
 const app = express();
 const port = 3000;
 app.use(express.json());
@@ -27,6 +28,7 @@ app.use('/',bussinessCard);
 app.use('/',contactUs);
 app.use('/',profileInfo);
 app.use('/',community);
+app.use('/',socialSignUp);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
