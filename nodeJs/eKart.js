@@ -17,6 +17,9 @@ AWS.config.update({
   endpoint: 'https://cellar-c2.services.clever-cloud.com'
 });
 
+// Create an S3 instance
+const s3 = new AWS.S3();
+
 router.get('/getCartData', (req, res) => {
   const offset = parseInt(req.query.offset) || 0;
   const limit = 6;

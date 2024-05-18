@@ -43,12 +43,12 @@ router.get('/getCommunityQuestions', (req, res) => {
     ON 
         c.qId = a.qId 
     LEFT JOIN 
-        profile_Image AS pi -- Left join with profile_Image table
+        signup_table AS pi -- Left join with profile_Image table
     ON 
         c.emailId = pi.emailId -- Join based on emailId
-    WHERE 
+        WHERE 
         c.question LIKE '%${searchQuery}%' OR
-        a.answer LIKE '%${searchQuery}%' 
+        a.answer LIKE '%${searchQuery}%'      
     LIMIT ${limit} OFFSET ${offset}`;
    console.log(sql);
 
@@ -65,61 +65,48 @@ router.get('/getCommunityQuestions', (req, res) => {
 
 
 router.get('/getUploadedCommunityQuestions', (req, res) => {
-  const { limit = 5, offset = 0, searchQuery = '', emailId } = req.query; // Default limit to 5, offset to 0, and search query to empty string if not provided
+  const { limit = 5, offset = 0, searchQuery = '', emailId } = req.query;
 
-  // Modify your SQL query to include the search condition
   const sql = `
   SELECT 
-      c.qId, 
-      c.emailId AS question_owner_email, 
-      pi.imagePath AS question_owner_imagePath, -- Include imagePath from profile_Image
-      c.userName AS question_userName_name, 
-      c.question, 
-      c.imagePath,
-      c.urlLink, -- Include urlLink from community_questions
-      c.ques_postedDate AS question_posted_date, 
-      a.emailId AS answer_userName_email, 
-      a.userName AS answer_owner_name, -- Include userName from community_answers
-      a.answer,
-      a.ans_postedDate AS answer_posted_date, 
-      f.likes, 
-      f.dislikes, 
-      f.comments, 
-      f.views, 
-      f.posted_date AS feedback_posted_date 
+    c.qId, 
+    c.emailId AS question_owner_email, 
+    pi.imagePath AS question_owner_imagePath, 
+    c.userName AS question_userName_name, 
+    c.question, 
+    c.imagePath,
+    c.urlLink, 
+    c.ques_postedDate AS question_posted_date, 
+    a.emailId AS answer_userName_email, 
+    a.userName AS answer_owner_name, 
+    a.answer,
+    a.ans_postedDate AS answer_posted_date 
   FROM 
-      (SELECT qId, emailId, userName,imagePath, question, urlLink, ques_postedDate FROM community_questions GROUP BY qId) AS c 
+    (SELECT qId, emailId, userName, imagePath, question, urlLink, ques_postedDate FROM community_questions) AS c 
   LEFT JOIN 
-      (SELECT qId, emailId, userName, answer, ans_postedDate FROM community_answers GROUP BY qId) AS a -- Include userName from community_answers
+    (SELECT qId, emailId, userName, answer, ans_postedDate FROM community_answers) AS a 
   ON 
-      c.qId = a.qId 
+    c.qId = a.qId 
   LEFT JOIN 
-      (SELECT qId, likes, dislikes, comments, views, posted_date FROM community_feedback GROUP BY qId) AS f 
+    signup_table AS pi 
   ON 
-      c.qId = f.qId 
-  LEFT JOIN 
-      profile_Image AS pi -- Left join with profile_Image table
-  ON 
-      c.emailId = pi.emailId -- Join based on emailId
+    c.emailId = pi.emailId 
   WHERE 
-      (c.question LIKE '%${searchQuery}%' OR
-      a.answer LIKE '%${searchQuery}%') AND
-      c.emailId = '${emailId}' -- Filter by emailId
-  LIMIT ${limit} OFFSET ${offset}`;
+    (c.question LIKE ? OR a.answer LIKE ?) AND c.emailId = ? 
+  GROUP BY c.qId
+  LIMIT ? OFFSET ?`;
 
-
-  console.log(sql);
-
-  db.query(sql, (err, results) => {
-      if (err) {
-          console.error('Error fetching records:', err);
-          res.status(500).json({ error: 'Error fetching records' });
-      } else {
-          console.log('Fetched records successfully');
-          return res.send({ status: true, records: results, message: 'Details Fetched Successfully' });
-      }
+  db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`, emailId, parseInt(limit), parseInt(offset)], (err, results) => {
+    if (err) {
+      console.error('Error fetching records:', err);
+      res.status(500).json({ error: 'Error fetching records' });
+    } else {
+      console.log('Fetched records successfully');
+      return res.send({ status: true, records: results, message: 'Details Fetched Successfully' });
+    }
   });
 });
+
 
 
 
@@ -142,7 +129,7 @@ router.get('/getMoreCommunityAnswers/:qId', (req, res) => {
     LEFT JOIN 
         community_answers AS a ON c.qId = a.qId
     LEFT JOIN 
-    profile_Image AS p ON a.emailId = p.emailId -- Join profile_Image table based on emailId
+    signup_table AS p ON a.emailId = p.emailId -- Join profile_Image table based on emailId
     WHERE 
         c.qId = ?`;
 
@@ -305,9 +292,6 @@ router.post('/feedback', (req, res) => {
     if (action === 'like') {
       feedbackType = 'likes';
       value = 1;
-    } else if (action === 'dislike') {
-      feedbackType = 'dislikes';
-      value = 1;
     } else if (action === 'view') { 
         feedbackType = 'views';
         value = 1;
@@ -332,7 +316,16 @@ router.post('/feedback', (req, res) => {
 
 router.get('/getFeedback/:qId', (req, res) => {
     const qId = req.params.qId; // Extracting qId from the route parameters
-    const sql = `SELECT COALESCE(SUM(likes), 0) AS total_likes, COALESCE(SUM(dislikes), 0) AS total_dislikes, COALESCE(SUM(views), 0) AS total_views FROM community_feedback WHERE qId = ?`
+    const sql = `SELECT 
+    COALESCE(SUM(cf.likes), 0) AS total_likes,  
+    COALESCE(SUM(cf.views), 0) AS total_views,
+    COALESCE(COUNT(DISTINCT ca.answer), 0) AS total_comments
+FROM 
+    community_feedback cf
+LEFT JOIN 
+    community_answers ca ON cf.qId = ca.qId
+WHERE 
+    cf.qId = ?`
     console.log(sql);
     db.query(sql, qId, (err, results) => {
         if (err) {
@@ -344,6 +337,23 @@ router.get('/getFeedback/:qId', (req, res) => {
         }
     });
 });
+
+
+router.get('/getLikesInfo/:emailId', (req, res) => {
+  const qId = req.params.emailId; // Extracting qId from the route parameters
+  const sql = `SELECT * FROM community_feedback WHERE emailId= ?`
+  console.log(sql);
+  db.query(sql, qId, (err, results) => {
+      if (err) {
+          console.error('Error fetching records:', err);
+          res.status(500).json({ error: 'Error fetching records' });
+      } else {
+          console.log('Fetched records successfully');
+          return res.send({ status: true, records: results, message: 'Details Fetched Successfully' });
+      }
+  });
+});
+
 
 
   function uploadImageToS3(imageBuffer, filename) {

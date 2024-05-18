@@ -17,6 +17,8 @@ router.use(cors());
 
 let jwtToken;
 let destination;
+let userEmailId;
+let url = 'http://localhost:4200//redirected-page';
 passport.serializeUser((user, done) => {
   done(null, user);
 });
@@ -75,7 +77,8 @@ router.get('/auth/google/callback', async (req, res) => {
     console.log(jwtToken);
     insertUserData(userData,jwtToken);
     console.log(userData);
-    res.redirect(`http://192.168.56.1:4200/${destination}`);
+    // res.json({ destination: req.query.destination });
+    res.redirect(`${url}/${destination}`);
   } catch (error) {
     console.error('Error:', error.message);
     res.status(500).send('An error occurred during Google OAuth login.');
@@ -125,7 +128,8 @@ router.get('/auth/linkedin/callback', (req, res) => {
         // Generate JWT
         jwtToken = jwt.sign(decodedToken,secretKey);
         console.log(jwtToken);
-        res.redirect(`http://192.168.56.1:4200/${destination}`);
+        // res.redirect(`http://10.0.0.68:4500/${destination}`);
+        res.redirect(`${url}/${destination}`);
   })
   .catch(error => {
     console.error('Error exchanging authorization code for access token:', error);
@@ -134,37 +138,48 @@ router.get('/auth/linkedin/callback', (req, res) => {
 });
 
 
-function insertUserData(userData,jwtSessionToken) {
+function insertUserData(userData, jwtSessionToken) {
   console.log('New', userData);
-  // Destructure userData here
   const { email, name, given_name, family_name, picture } = userData;
+  userEmailId = email;
   const signupDate = new Date();
-  
-  // Construct the data object with only the fields you want to insert
   const data = {
-    emailId: email,
     fullName: name,
     firstName: given_name,
     lastName: family_name,
     signupDate,
     imagePath: picture,
-    jwtToken : jwtSessionToken
+    jwtToken: jwtSessionToken
   };
 
-  const sql = 'INSERT INTO signup_table SET ?';
-  db.query(sql, data, (err, result) => {
+  const sql = `
+    INSERT INTO signup_table 
+      (emailId, fullName, firstName, lastName, signupDate, imagePath, jwtToken) 
+    VALUES 
+      (?, ?, ?, ?, ?, ?, ?) 
+    ON DUPLICATE KEY UPDATE 
+      fullName = VALUES(fullName), 
+      firstName = VALUES(firstName), 
+      lastName = VALUES(lastName), 
+      signupDate = VALUES(signupDate), 
+      imagePath = VALUES(imagePath), 
+      jwtToken = VALUES(jwtToken)
+  `;
+  const values = [email, data.fullName, data.firstName, data.lastName, data.signupDate, data.imagePath, data.jwtToken];
+
+  db.query(sql, values, (err, result) => {
     if (err) {
-      console.error('Error inserting user data:', err);
+      console.error('Error inserting or updating user data:', err);
       return;
     }
-    console.log('User data inserted successfully:', result);
+    console.log('User data inserted or updated successfully:', result);
   });
 }
 
-
 router.get('/getSession', (req, res) => {
-  const sql = 'SELECT jwtToken FROM signup_table';
-  db.query(sql, (err, results) => {
+  emailId = userEmailId;
+  const sql = 'SELECT emailId,firstName,jwtToken FROM signup_table WHERE emailId = ?';
+  db.query(sql, [userEmailId], (err, results) => {
     if (err) {
       console.error('Error fetching records:', err);
       res.status(500).json({ error: 'Error fetching records' });
@@ -175,9 +190,4 @@ router.get('/getSession', (req, res) => {
   });   
 });
   
-router.get('/logout', (req, res) => {
-    jwtToken = null;
-    return res.send({ status: true, session: jwtToken, message: 'Logout SuccessFully' });
-});
-
 module.exports = router;

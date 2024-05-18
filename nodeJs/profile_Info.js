@@ -16,7 +16,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors());
 AWS.config.update({
   accessKeyId: 'KJ9SPRHRL34JNQBWXC34',
-  secretAccessKey: 'OBUzDlDHxL0aV3G8mGXDVGaGC65r3h9HQlbADGR9',
+  secretAccessKey: 'OBUzDlDHxL0aV3G7mGXDVGaGC65r3h9HQlbADGR9',
   region: 'us-east-1',
   endpoint: 'https://cellar-c2.services.clever-cloud.com'
 });
@@ -26,25 +26,25 @@ const s3 = new AWS.S3();
 
 router.get('/getProfile/:emailId', (req, res) => {
   const emailId = req.params.emailId;
-  const sql = 'SELECT * FROM UserProfile WHERE emailId = ?';
+  const sql = 'SELECT * FROM signup_table WHERE emailId = ?';
   console.log(sql);
   fetchFromDatabase(res, sql, emailId);
 });
 
 router.get('/getProfile', (req, res) => {
   const emailId = req.params.emailId;
-  const sql = 'SELECT emailId,companyName FROM UserProfile';
+  const sql = 'SELECT emailId,companyName FROM signup_table';
   console.log(sql);
   fetchFromDatabase(res, sql, emailId);
 });
 
 
-router.get('/getProfileImages', (req, res) => {
-  const emailId = req.params.emailId;
-  const sql = 'SELECT * FROM profile_Image';
-  console.log(sql);
-  fetchFromDatabase(res, sql, emailId);
-});
+// router.get('/getProfileImages', (req, res) => {
+//   const emailId = req.params.emailId;
+//   const sql = 'SELECT * FROM profile_Image';
+//   console.log(sql);
+//   fetchFromDatabase(res, sql, emailId);
+// });
 
 
 
@@ -57,7 +57,7 @@ router.get('/getSocialMediaProfile/:emailId', (req, res) => {
 
 router.get('/getProfileImage/:emailId', (req, res) => {
   const emailId = req.params.emailId;
-  const sql = 'SELECT * FROM profile_Image WHERE emailId = ?';
+  const sql = 'SELECT imagePath FROM signup_table WHERE emailId = ?';
   console.log(sql);
   fetchFromDatabase(res, sql, emailId);
 });
@@ -71,11 +71,11 @@ router.post('/insertProfile', upload.none(), (req, res) => {
 });
 
 router.post('/updateProfile', upload.none(), (req, res) => {
-  const { emailId, userName, userEmailId, mobileNumber, dob, gender, jobTitle, companyName, location, address1, address2, country, state, city, zipcode, stdCode } = req.body;
-  const dateOfBirth = dob ? new Date(dob) : null;
-  const postedDate = new Date();
-  const data = { userName, userEmailId, mobileNumber, dob: dateOfBirth, gender, jobTitle, companyName, location, address1, address2, country, state, city, zipcode, postedDate, stdCode };
-  updateDatabase(res, 'UserProfile', data, `emailId = '${emailId}'`);
+  const {  emailId,mobileNumber,companyName, designation, dob, location, gender } = req.body;
+  console.log(req.body);
+  const updatedDate = new Date();
+  const data = { mobileNumber,companyName, designation, dob, location, gender,updatedDate };
+  updateDatabase(res, 'signup_table', data, `emailId = '${emailId}'`);
 });
 
 router.post('/insertSocialMedia', upload.none(), (req, res) => {
@@ -172,47 +172,39 @@ router.post('/updateProfileImage', upload.single('image'), (req, res) => {
   }
 });
 
-router.get('/getProfileWeight/:emailId', (req, res) => {
+router.get('/getProfileWeight/:emailId', async (req, res) => {
   const emailId = req.params.emailId;
-  
   // Define field weights for each table
   const userProfileWeights = {
-    userName: 5,
-    userEmailId: 5,
-    mobileNumber: 5,
-    dob: 5,
-    gender: 5,
-    jobTitle: 5,
-    companyName: 5,
-    location: 5,
-    address1: 5,
-    address2: 5,
-    country: 5,
-    state: 5,
-    city: 5,
-    zipcode: 5,
-    // postedDate: 5
+    imagePath: 16,
+    fullName: 7,
+    emailId: 7,
+    mobileNumber: 7,
+    dob: 7,
+    companyName : 7,
+    gender: 7,
+    designation: 7,
+    location: 7
   };
-  
+
   const socialMediaProfileWeights = {
-    twitter: 5,
-    faceBook: 5,
-    instagram: 5,
-    linkedIn: 5
-  };
-  
-  const profileImageWeights = {
-    imagePath: 10
+    twitter: 7,
+    faceBook: 7,
+    instagram: 7,
+    linkedIn: 7
   };
 
   let totalWeight = 0;
-  db.query('SELECT * FROM UserProfile WHERE emailId = ?', [emailId], (err, userProfileResults) => {
-    if (err) {
-      console.error('Error fetching UserProfile records:', err);
-      return res.status(500).json({ error: 'Error fetching records' });
-    }
 
-    if (userProfileResults[0]) { // Check if there is data
+  try {
+    const userProfileResults = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM signup_table WHERE emailId = ?', [emailId], (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+      });
+    });
+
+    if (userProfileResults[0]) {
       Object.keys(userProfileWeights).forEach(field => {
         if (userProfileResults[0][field]) {
           totalWeight += userProfileWeights[field];
@@ -220,39 +212,28 @@ router.get('/getProfileWeight/:emailId', (req, res) => {
       });
     }
 
-    db.query('SELECT * FROM socialMediaPofile WHERE emailId = ?', [emailId], (err, socialMediaProfileResults) => {
-      if (err) {
-        console.error('Error fetching socialMediaPofile records:', err);
-        return res.status(500).json({ error: 'Error fetching records' });
-      }
-
-      if (socialMediaProfileResults[0]) { // Check if there is data
-        Object.keys(socialMediaProfileWeights).forEach(field => {
-          if (socialMediaProfileResults[0][field]) {
-            totalWeight += socialMediaProfileWeights[field];
-          }
-        });
-      }
-
-      db.query('SELECT * FROM profile_Image WHERE emailId = ?', [emailId], (err, profileImageResults) => {
-        if (err) {
-          console.error('Error fetching profile_Image records:', err);
-          return res.status(500).json({ error: 'Error fetching records' });
-        }
-
-        if (profileImageResults[0]) { // Check if there is data
-          Object.keys(profileImageWeights).forEach(field => {
-            if (profileImageResults[0][field]) {
-              totalWeight += profileImageWeights[field];
-            }
-          });
-        }
-
-        res.send({ status: true, profileWeight: totalWeight, message: 'Profile Weight Calculated Successfully' });
+    const socialMediaProfileResults = await new Promise((resolve, reject) => {
+      db.query('SELECT * FROM socialMediaPofile WHERE emailId = ?', [emailId], (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
       });
     });
-  });
+
+    if (socialMediaProfileResults[0]) {
+      Object.keys(socialMediaProfileWeights).forEach(field => {
+        if (socialMediaProfileResults[0][field]) {
+          totalWeight += socialMediaProfileWeights[field];
+        }
+      });
+    }
+
+    res.json({ status: true, profileWeight : totalWeight, message: 'profileWeight fected Succesfully' });
+  } catch (error) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({ error: 'Error fetching records' });
+  }
 });
+
 
 function uploadImageToS3(imageBuffer, filename) {
   const fileExtension = filename.split('.').pop().toLowerCase();
