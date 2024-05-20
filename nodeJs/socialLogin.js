@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const passport = require('passport');
 const session = require('express-session');
@@ -8,17 +9,17 @@ const fetch = require('node-fetch2');
 const crypto = require('crypto');
 const cors = require('cors');
 
-router.use(session({ secret: 'your-secret-key', resave: false, saveUninitialized: true }));
+router.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 const secretKey = crypto.randomBytes(32).toString('hex');
 router.use(passport.initialize());
 router.use(passport.session());
 router.use(cors());
 
-
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://10.0.0.68:4500//redirected-page';
+let url = 'http://192.168.29.47:4200/redirected-page';
+
 passport.serializeUser((user, done) => {
   done(null, user);
 });
@@ -27,32 +28,28 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// router.get('/socialSignup', (req, res) => {
-//   res.send('<a href="/auth/google">Login with Google</a><br/><a href="/auth/linkedin">Login with LinkedIn</a>');
-// });
-
-router.get('/auth/google', (req, res)=>{
-    destination = req.query.destination || 'default';
-    console.log(destination);
-  const clientId = '174840204918-crafnkq8133bvinfkgvdjl6ta58psagm.apps.googleusercontent.com';
+router.get('/auth/google', (req, res) => {
+  destination = req.query.destination || 'default';
+  console.log(destination);
+  const clientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/google/callback';
   const scope = 'email profile';
   const responseType = 'code';
   const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&prompt=select_account`;
-  res.redirect(googleOAuthUrl)
+  res.redirect(googleOAuthUrl);
 });
 
 router.get('/auth/google/callback', async (req, res) => {
   try {
-    const code = req.query.code; 
+    const code = req.query.code;
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        client_id: '174840204918-crafnkq8133bvinfkgvdjl6ta58psagm.apps.googleusercontent.com',
-        client_secret: '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',
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
         code: code,
         redirect_uri: 'https://av-nodejs.onrender.com/auth/google/callback',
         grant_type: 'authorization_code'
@@ -62,7 +59,7 @@ router.get('/auth/google/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       throw new Error(`Failed to exchange code for token: ${tokenData.error}`);
     }
-    const accessToken = tokenData.access_token; 
+    const accessToken = tokenData.access_token;
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -72,12 +69,10 @@ router.get('/auth/google/callback', async (req, res) => {
       throw new Error(`Failed to fetch user info: ${userData.error}`);
     }
     const userData = await userInfoResponse.json();
-    // Generate JWT
     jwtToken = jwt.sign(userData, secretKey);
     console.log(jwtToken);
-    insertUserData(userData,jwtToken);
+    insertUserData(userData, jwtToken);
     console.log(userData);
-    // res.json({ destination: req.query.destination });
     res.redirect(`${url}/${destination}`);
   } catch (error) {
     console.error('Error:', error.message);
@@ -86,20 +81,19 @@ router.get('/auth/google/callback', async (req, res) => {
 });
 
 router.get('/auth/linkedin', (req, res) => {
-//   destination = req.query.destination || 'default';
   destination = req.query.destination || 'default';
-  const clientId = '86y7mzcian4bf6';
+  const clientId = process.env.LINKEDIN_CLIENT_ID;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
   const scopes = 'openid email profile';
-  const state = 'random'; 
+  const state = 'random';
 
   const linkedInAuthUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}`;
   res.redirect(linkedInAuthUrl);
 });
 
 router.get('/auth/linkedin/callback', (req, res) => {
-  const clientId = '86y7mzcian4bf6';
-  const clientSecret = 'WPL_AP0.Y7df4hs1wIJogddi.MzMyNjg0OTU3Mw==';
+  const clientId = process.env.LINKEDIN_CLIENT_ID;
+  const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
   const code = req.query.code;
 
@@ -123,13 +117,11 @@ router.get('/auth/linkedin/callback', (req, res) => {
   .then(data => {
     const id_token = data.id_token;
     const decodedToken = jwt.decode(id_token);
-    console.log("user Data ",decodedToken)
+    console.log("user Data ", decodedToken);
     insertUserData(decodedToken);
-        // Generate JWT
-        jwtToken = jwt.sign(decodedToken,secretKey);
-        console.log(jwtToken);
-        // res.redirect(`http://10.0.0.68:4500/${destination}`);
-        res.redirect(`${url}/${destination}`);
+    jwtToken = jwt.sign(decodedToken, secretKey);
+    console.log(jwtToken);
+    res.redirect(`${url}/${destination}`);
   })
   .catch(error => {
     console.error('Error exchanging authorization code for access token:', error);
@@ -137,22 +129,20 @@ router.get('/auth/linkedin/callback', (req, res) => {
   });
 });
 
-
 router.get('/auth/facebook', (req, res) => {
-  const clientId = '1896322280875114';
+  const clientId = process.env.FACEBOOK_CLIENT_ID;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
   const scopes = 'email public_profile';
-  const state = 'random'; 
+  const state = 'random';
   const destination = req.query.destination || 'default';
 
   const facebookAuthUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}`;
   res.redirect(facebookAuthUrl);
 });
 
-
 router.get('/auth/facebook/callback', (req, res) => {
-  const clientId = '1896322280875114';
-  const clientSecret = '2ee456851dd955058c4424ebe5e3692b';
+  const clientId = process.env.FACEBOOK_CLIENT_ID;
+  const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
   const code = req.query.code;
   const destination = req.query.state;
@@ -170,14 +160,9 @@ router.get('/auth/facebook/callback', (req, res) => {
     .then(response => response.json())
     .then(profile => {
       console.log("User Profile:", profile);
-      // Insert or update user data in your database
       insertUserData(profile);
-
-      // Generate JWT
       const jwtToken = jwt.sign(profile, secretKey);
       console.log(jwtToken);
-
-      // res.redirect(`http://10.0.0.68:4500/${destination}`);
       res.redirect(`${url}/${destination}`);
     })
     .catch(error => {
@@ -185,12 +170,6 @@ router.get('/auth/facebook/callback', (req, res) => {
       res.status(500).send('Error exchanging authorization code for access token');
     });
 });
-
-
-
-
-
-
 
 function insertUserData(userData, jwtSessionToken) {
   console.log('New', userData);
@@ -238,10 +217,10 @@ router.get('/getSession', (req, res) => {
       console.error('Error fetching records:', err);
       res.status(500).json({ error: 'Error fetching records' });
     } else {
-      console.log('JwtToken',results)
+      console.log('JwtToken', results);
       return res.send({ status: true, session: results, message: 'Details Fetched Successfully' });
     }
-  });   
+  });
 });
-  
+
 module.exports = router;
