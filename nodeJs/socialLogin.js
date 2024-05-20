@@ -18,7 +18,7 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://localhost:4200//redirected-page';
+let url = 'http://10.0.0.68:4500//redirected-page';
 passport.serializeUser((user, done) => {
   done(null, user);
 });
@@ -34,8 +34,8 @@ passport.deserializeUser((user, done) => {
 router.get('/auth/google', (req, res)=>{
     destination = req.query.destination || 'default';
     console.log(destination);
-  const clientId = '1080326324955-b851uhmcl7npi84eunt5od5jo0pqc1kb.apps.googleusercontent.com';
-  const redirectUri = 'http://localhost:3000/auth/google/callback';
+  const clientId = '174840204918-crafnkq8133bvinfkgvdjl6ta58psagm.apps.googleusercontent.com';
+  const redirectUri = 'https://av-nodejs.onrender.com/auth/google/callback';
   const scope = 'email profile';
   const responseType = 'code';
   const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&prompt=select_account`;
@@ -51,10 +51,10 @@ router.get('/auth/google/callback', async (req, res) => {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        client_id: '1080326324955-b851uhmcl7npi84eunt5od5jo0pqc1kb.apps.googleusercontent.com',
-        client_secret: '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',
+        client_id: '174840204918-crafnkq8133bvinfkgvdjl6ta58psagm.apps.googleusercontent.com',
+        client_secret: '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',
         code: code,
-        redirect_uri: 'http://localhost:3000/auth/google/callback',
+        redirect_uri: 'https://av-nodejs.onrender.com/auth/google/callback',
         grant_type: 'authorization_code'
       })
     });
@@ -88,8 +88,8 @@ router.get('/auth/google/callback', async (req, res) => {
 router.get('/auth/linkedin', (req, res) => {
 //   destination = req.query.destination || 'default';
   destination = req.query.destination || 'default';
-  const clientId = '86bxc6yrc616ep';
-  const redirectUri = 'http://localhost:3000/auth/linkedin/callback';
+  const clientId = '86y7mzcian4bf6';
+  const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
   const scopes = 'openid email profile';
   const state = 'random'; 
 
@@ -98,9 +98,9 @@ router.get('/auth/linkedin', (req, res) => {
 });
 
 router.get('/auth/linkedin/callback', (req, res) => {
-  const clientId = '86bxc6yrc616ep';
-  const clientSecret = 'MajDri5O16mwT50L';
-  const redirectUri = 'http://localhost:3000/auth/linkedin/callback';
+  const clientId = '86y7mzcian4bf6';
+  const clientSecret = 'WPL_AP0.Y7df4hs1wIJogddi.MzMyNjg0OTU3Mw==';
+  const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
   const code = req.query.code;
 
   const accessTokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
@@ -136,6 +136,60 @@ router.get('/auth/linkedin/callback', (req, res) => {
     res.status(500).send('Error exchanging authorization code for access token');
   });
 });
+
+
+router.get('/auth/facebook', (req, res) => {
+  const clientId = '1896322280875114';
+  const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
+  const scopes = 'email public_profile';
+  const state = 'random'; 
+  const destination = req.query.destination || 'default';
+
+  const facebookAuthUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}`;
+  res.redirect(facebookAuthUrl);
+});
+
+
+router.get('/auth/facebook/callback', (req, res) => {
+  const clientId = '1896322280875114';
+  const clientSecret = '2ee456851dd955058c4424ebe5e3692b';
+  const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
+  const code = req.query.code;
+  const destination = req.query.state;
+
+  const accessTokenUrl = `https://graph.facebook.com/v12.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`;
+
+  fetch(accessTokenUrl)
+    .then(response => response.json())
+    .then(data => {
+      const accessToken = data.access_token;
+      const userProfileUrl = `https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`;
+
+      return fetch(userProfileUrl);
+    })
+    .then(response => response.json())
+    .then(profile => {
+      console.log("User Profile:", profile);
+      // Insert or update user data in your database
+      insertUserData(profile);
+
+      // Generate JWT
+      const jwtToken = jwt.sign(profile, secretKey);
+      console.log(jwtToken);
+
+      // res.redirect(`http://10.0.0.68:4500/${destination}`);
+      res.redirect(`${url}/${destination}`);
+    })
+    .catch(error => {
+      console.error('Error exchanging authorization code for access token:', error);
+      res.status(500).send('Error exchanging authorization code for access token');
+    });
+});
+
+
+
+
+
 
 
 function insertUserData(userData, jwtSessionToken) {
