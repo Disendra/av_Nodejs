@@ -18,7 +18,7 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://10.0.0.68:4500/redirected-page';
+let url = 'https://disendra-avproject.netlify.app/redirected-page';
 
 passport.serializeUser((user, done) => {
   done(null, user);
@@ -129,12 +129,13 @@ router.get('/auth/linkedin/callback', (req, res) => {
   });
 });
 
+
 router.get('/auth/facebook', (req, res) => {
+  destination = req.query.destination || 'default';
   const clientId = process.env.FACEBOOK_CLIENT_ID;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
   const scopes = 'email public_profile';
   const state = 'random';
-  const destination = req.query.destination || 'default';
 
   const facebookAuthUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&state=${encodeURIComponent(state)}`;
   res.redirect(facebookAuthUrl);
@@ -145,31 +146,55 @@ router.get('/auth/facebook/callback', (req, res) => {
   const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
   const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
   const code = req.query.code;
-  const destination = req.query.state;
 
   const accessTokenUrl = `https://graph.facebook.com/v12.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`;
 
   fetch(accessTokenUrl)
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Error fetching access token: ${response.statusText}`);
+      }
+      return response.json();
+    })
     .then(data => {
       const accessToken = data.access_token;
-      const userProfileUrl = `https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`;
-
+      console.log('Access Token:', accessToken);
+      if (!accessToken) {
+        throw new Error('Access token not returned');
+      }
+      const userProfileUrl = `https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,first_name,last_name,email,picture`;
       return fetch(userProfileUrl);
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Error fetching user profile: ${response.statusText}`);
+      }
+      return response.json();
+    })
     .then(profile => {
-      console.log("User Profile:", profile);
-      insertUserData(profile);
+      console.log('User Profile:', profile);
+      if (!profile.email) {
+        throw new Error('Email not provided by Facebook');
+      }
+      let modifiedProfile = {
+        name: profile.name,
+        given_name : profile.first_name,
+        family_name : profile.last_name,
+        email: profile.email,
+        picture: profile.picture?.data?.url || null
+      };
+      console.log('modifiedProfile', modifiedProfile)
+      insertUserData(modifiedProfile);
       const jwtToken = jwt.sign(profile, secretKey);
-      console.log(jwtToken);
+      console.log('JWT Token:', jwtToken);
       res.redirect(`${url}/${destination}`);
     })
     .catch(error => {
-      console.error('Error exchanging authorization code for access token:', error);
-      res.status(500).send('Error exchanging authorization code for access token');
+      console.error('Error in OAuth flow:', error.message);
+      res.status(500).send('Error in OAuth flow');
     });
 });
+
 
 function insertUserData(userData, jwtSessionToken) {
   console.log('New', userData);
