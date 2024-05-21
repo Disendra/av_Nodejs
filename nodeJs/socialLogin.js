@@ -18,7 +18,7 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'https://disendra-avproject.netlify.app/redirected-page';
+let url = 'http://192.168.0.6:4500/redirected-page';
 
 passport.serializeUser((user, done) => {
   done(null, user);
