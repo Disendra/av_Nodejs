@@ -18,7 +18,7 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://10.0.0.68:4500/redirected-page';
+let url = 'http://localhost:4200/redirected-page';
 
 passport.serializeUser((user, done) => {
   done(null, user);

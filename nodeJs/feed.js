@@ -42,6 +42,27 @@ router.get('/getFeedData', (req, res) => {
   });
 });
 
+router.get('/getEvents', (req, res) => {
+  const sql = 'SELECT * FROM events';
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).send({ status: false, message: err.message });
+    } else {
+      return res.send({
+        status: true,
+        records: result,
+        message: 'Details Fetched Successfully'
+      });
+    }
+  });
+});
+
+
+
+
+
+
 const deleteExpiredRecords = () => {
   const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
   const deleteSql = `DELETE FROM Community_Announcements WHERE dltFeedDate = '${currentDate}'`;
