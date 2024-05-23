@@ -18,7 +18,7 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'https://disendra-avproject.netlify.app/redirected-page/redirected-page';
+let url = 'https://disendra-avproject.netlify.app/redirected-page';
 let googleRedirectUrl = 'https://av-nodejs.onrender.com/auth/google/callback'
 let linkedinRedirectUrl = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
 let facebookRedirectUrl = 'https://av-nodejs.onrender.com/auth/facebook/callback';
