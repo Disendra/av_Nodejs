@@ -18,7 +18,10 @@ router.use(cors());
 let jwtToken;
 let destination;
 let userEmailId;
-let url = 'http://localhost:4200/redirected-page';
+let url = 'https://disendra-avproject.netlify.app/redirected-page';
+let googleRedirectUrl = 'https://av-nodejs.onrender.com/auth/google/callback'
+let linkedinRedirectUrl = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
+let facebookRedirectUrl = 'https://av-nodejs.onrender.com/auth/facebook/callback';
 
 passport.serializeUser((user, done) => {
   done(null, user);
@@ -32,7 +35,7 @@ router.get('/auth/google', (req, res) => {
   destination = req.query.destination || 'default';
   console.log(destination);
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = 'https://av-nodejs.onrender.com/auth/google/callback';
+  const redirectUri = googleRedirectUrl;
   const scope = 'email profile';
   const responseType = 'code';
   const googleOAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&prompt=select_account`;
@@ -51,7 +54,7 @@ router.get('/auth/google/callback', async (req, res) => {
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
         code: code,
-        redirect_uri: 'https://av-nodejs.onrender.com/auth/google/callback',
+        redirect_uri: googleRedirectUrl,
         grant_type: 'authorization_code'
       })
     });
@@ -83,7 +86,7 @@ router.get('/auth/google/callback', async (req, res) => {
 router.get('/auth/linkedin', (req, res) => {
   destination = req.query.destination || 'default';
   const clientId = process.env.LINKEDIN_CLIENT_ID;
-  const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
+  const redirectUri = linkedinRedirectUrl;
   const scopes = 'openid email profile';
   const state = 'random';
 
@@ -94,7 +97,7 @@ router.get('/auth/linkedin', (req, res) => {
 router.get('/auth/linkedin/callback', (req, res) => {
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
-  const redirectUri = 'https://av-nodejs.onrender.com/auth/linkedin/callback';
+  const redirectUri = linkedinRedirectUrl;
   const code = req.query.code;
 
   const accessTokenUrl = 'https://www.linkedin.com/oauth/v2/accessToken';
@@ -133,7 +136,7 @@ router.get('/auth/linkedin/callback', (req, res) => {
 router.get('/auth/facebook', (req, res) => {
   destination = req.query.destination || 'default';
   const clientId = process.env.FACEBOOK_CLIENT_ID;
-  const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
+  const redirectUri = facebookRedirectUrl;
   const scopes = 'email public_profile';
   const state = 'random';
 
@@ -144,7 +147,7 @@ router.get('/auth/facebook', (req, res) => {
 router.get('/auth/facebook/callback', (req, res) => {
   const clientId = process.env.FACEBOOK_CLIENT_ID;
   const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
-  const redirectUri = 'https://av-nodejs.onrender.com/auth/facebook/callback';
+  const redirectUri = facebookRedirectUrl;
   const code = req.query.code;
 
   const accessTokenUrl = `https://graph.facebook.com/v12.0/oauth/access_token?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${clientSecret}&code=${code}`;

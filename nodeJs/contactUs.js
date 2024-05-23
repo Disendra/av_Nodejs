@@ -2,6 +2,7 @@
 const express = require('express');
 const db = require('./dbConnection');
 const nm = require('nodemailer');
+require('dotenv').config();
 
 const router = express.Router();
 
@@ -11,8 +12,8 @@ function sendMail(personName, emailId, mobileNumber, subject, message) {
         port: 587,
         secure: false,
         auth: {
-            user: 'gdisendra@gmail.com',
-            pass: 'bnkn ajsg kygz txmr'
+            user: process.env.GMAIL_USERNAME,
+            pass: process.env.GMAIL_PASSWORD 
         }
     });
 
