@@ -9,7 +9,7 @@ const router = express.Router()
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 const upload = multer({ storage: multer.memoryStorage() });
-const s3 = new AWS.S3();
+
 app.use(cors());
 AWS.config.update({
   accessKeyId: 'KJ9SPRHRL34JNQBWXC34',
@@ -17,6 +17,8 @@ AWS.config.update({
   region: 'us-east-1',
   endpoint: 'https://cellar-c2.services.clever-cloud.com'
 });
+
+const s3 = new AWS.S3();
 
 router.get('/getCommunityQuestions', (req, res) => {
     const { limit = 5, offset = 0, searchQuery = '' } = req.query; // Default limit to 1, offset to 0, and search query to empty string if not provided
@@ -154,7 +156,7 @@ router.post('/insertCommunity', upload.single('image'), (req, res) => {
     if (req.file) {
         const imageBuffer = req.file.buffer;
         const imageName = req.file.originalname;
-
+       console.log(imageBuffer,imageName);
         uploadImageToS3(imageBuffer, imageName)
             .then((imageUrl) => {
                 console.log('Image uploaded successfully:', imageUrl);
@@ -354,45 +356,43 @@ router.get('/getLikesInfo/:emailId', (req, res) => {
   });
 });
 
-
-
-  function uploadImageToS3(imageBuffer, filename) {
-    const fileExtension = filename.split('.').pop().toLowerCase();
-    let contentType;
-    switch (fileExtension) {
-      case 'jpg':
-      case 'jpeg':
-        contentType = 'image/jpeg';
-        break;
-      case 'png':
-        contentType = 'image/png';
-        break;
-      case 'gif':
-        contentType = 'image/gif';
-        break;
-      default:
-        contentType = 'application/octet-stream';
-    }
-  
-    const params = {
-      Bucket: 'community-images',
-      Key: filename,
-      Body: imageBuffer,
-      ACL: 'public-read',
-      ContentType: contentType,
-      ContentDisposition: 'inline'
-    };
-  
-    return new Promise((resolve, reject) => {
-      s3.upload(params, (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data.Location);
-        }
-      });
-    });
+function uploadImageToS3(imageBuffer, filename) {
+  const fileExtension = filename.split('.').pop().toLowerCase();
+  let contentType;
+  switch (fileExtension) {
+    case 'jpg':
+    case 'jpeg':
+      contentType = 'image/jpeg';
+      break;
+    case 'png':
+      contentType = 'image/png';
+      break;
+    case 'gif':
+      contentType = 'image/gif';
+      break;
+    default:
+      contentType = 'application/octet-stream';
   }
+
+  const params = {
+    Bucket: 'cart-images',
+    Key: filename,
+    Body: imageBuffer,
+    ACL: 'public-read',
+    ContentType: contentType,
+    ContentDisposition: 'inline'
+  };
+
+  return new Promise((resolve, reject) => {
+    s3.upload(params, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data.Location);
+      }
+    });
+  });
+}
 
 
   module.exports = router
