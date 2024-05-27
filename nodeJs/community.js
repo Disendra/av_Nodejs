@@ -50,7 +50,9 @@ router.get('/getCommunityQuestions', (req, res) => {
         c.emailId = pi.emailId -- Join based on emailId
         WHERE 
         c.question LIKE '%${searchQuery}%' OR
-        a.answer LIKE '%${searchQuery}%'      
+        a.answer LIKE '%${searchQuery}%' 
+        ORDER BY 
+        c.ques_postedDate DESC     
     LIMIT ${limit} OFFSET ${offset}`;
    console.log(sql);
 
@@ -96,6 +98,8 @@ router.get('/getUploadedCommunityQuestions', (req, res) => {
   WHERE 
     (c.question LIKE ? OR a.answer LIKE ?) AND c.emailId = ? 
   GROUP BY c.qId
+  ORDER BY 
+    c.ques_postedDate DESC 
   LIMIT ? OFFSET ?`;
 
   db.query(sql, [`%${searchQuery}%`, `%${searchQuery}%`, emailId, parseInt(limit), parseInt(offset)], (err, results) => {
@@ -108,9 +112,6 @@ router.get('/getUploadedCommunityQuestions', (req, res) => {
     }
   });
 });
-
-
-
 
 router.get('/getMoreCommunityAnswers/:qId', (req, res) => {
     const qId = req.params.qId; // Extracting qId from the route parameters

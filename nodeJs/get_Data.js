@@ -5,24 +5,26 @@ const db = require('./dbConnection');
 const router = express.Router();
 
 router.get('/getLoginData', (req, res) => {
-  let { page, pageSize, searchTerm } = req.query
-  page = parseInt(page, 10)
-  pageSize = parseInt(pageSize, 10)
-  const offset = Math.max(0, (page - 1) * pageSize)
+  let { page, pageSize, searchTerm } = req.query;
+  page = parseInt(page, 10);
+  pageSize = parseInt(pageSize, 10);
+  const offset = Math.max(0, (page - 1) * pageSize);
 
-  let sql = `SELECT * FROM signup_table`
-  const values = []
+  let sql = `SELECT * FROM signup_table`;
+  const values = [];
 
   if (searchTerm) {
-    sql += ` WHERE fullName LIKE ?`
-    values.push(`%${searchTerm}%`)
+    sql += ` WHERE fullName LIKE ? OR companyName LIKE ?`;
+    const searchPattern = `%${searchTerm}%`;
+    values.push(searchPattern, searchPattern);
   }
 
-  sql += ` LIMIT ?, ?`
-  values.push(offset, pageSize)
+  sql += ` LIMIT ?, ?`;
+  values.push(offset, pageSize);
 
-  handleQuery(sql, values, res)
-})
+  handleQuery(sql, values, res);
+});
+
 
 router.get('/loginInfo', (req, res) => {
   const sql = 'SELECT * FROM login_Logs';
