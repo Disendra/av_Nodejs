@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const db = require('./dbConnection');
 const cron = require('node-cron');
 const nm = require('nodemailer');
+const moment = require('moment');
 require('dotenv').config();
 
 const app = express();
@@ -61,18 +62,55 @@ router.get('/getEvents', (req, res) => {
 }); 
 
 router.post('/insertEvent', (req, res) => {
-  const { event_name, event_date, website_Url, dltFeedDate } = req.body;
-  const data = { event_name, event_date, website_Url, dltFeedDate };
-  const sql = 'INSERT INTO events SET ?';
-  db.query(sql, data, (err, result) => {
-    if (err) {
+  const { event_name, event_date, eventEndDate, website_Url, dltFeedDate } = req.body;
+  console.log(req.body);
+  // Parse the dates
+  const startDate = moment(event_date, 'YYYY-MM-DD');
+  const endDate = moment(eventEndDate, 'YYYY-MM-DD');
+
+  // Check if dates are valid
+  if (!startDate.isValid() || !endDate.isValid()) {
+    return res.status(400).send({ status: false, message: 'Invalid date format. Use YYYY-MM-DD.' });
+  }
+
+  // Create an array to hold all the insert promises
+  const insertPromises = [];
+
+  // Loop through each date in the range
+  for (let date = startDate; date.isSameOrBefore(endDate); date.add(1, 'days')) {
+    const data = {
+      event_name,
+      event_date: date.format('YYYY-MM-DD'), // Format date to match SQL date format
+      website_Url,
+      dltFeedDate,
+    };
+
+    // Create a promise for each insert query
+    const insertPromise = new Promise((resolve, reject) => {
+      const sql = 'INSERT INTO events SET ?';
+      db.query(sql, data, (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve(result);
+      });
+    });
+
+    // Push the promise to the array
+    insertPromises.push(insertPromise);
+  }
+
+  // Execute all insert queries
+  Promise.all(insertPromises)
+    .then(() => {
+      res.send({ status: true, message: 'Event Added Successfully' });
+    })
+    .catch((err) => {
       console.log(err);
-      return res.status(500).send({ status: false, message: err.message });
-    } else {
-      return res.send({ status: true, message: 'Event Added Successfully' });
-    }
-  });
+      res.status(500).send({ status: false, message: err.message });
+    });
 });
+
 
 
 router.post('/postEvent', (req) => {
