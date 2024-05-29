@@ -11,10 +11,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const router = express.Router()
 
 router.post('/insertFeedBack', (req, res) => {
-  const { emailId, rating, message} = req.body
-  const date = new Date()
+  const { emailId, rating, message,userName} = req.body
+  const createdDate = new Date()
 
-  const data = { emailId, rating,date,message }
+  const data = { emailId, rating,createdDate,message,userName }
 
   const sql = 'INSERT INTO feedback SET ?'
 
