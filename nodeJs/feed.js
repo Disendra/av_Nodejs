@@ -4,6 +4,7 @@ const db = require('./dbConnection');
 const cron = require('node-cron');
 const nm = require('nodemailer');
 const moment = require('moment');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -111,7 +112,15 @@ router.post('/insertEvent', (req, res) => {
     });
 });
 
-
+router.get('/getMacData/:sysAddress', async (req, res) => {
+  try {
+    const response = await axios.get(`https://macvendorlookup.com/api/v2/${req.params.sysAddress}`);
+    return res.send({ records: response.data, message: 'Mac Details Fetched Successfully'});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching Mac details.' });
+  }
+});
 
 router.post('/postEvent', (req) => {
   const { eventName, eventUrl, startDate, endDate } = req.body;
