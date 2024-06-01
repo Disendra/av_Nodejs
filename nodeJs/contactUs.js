@@ -27,7 +27,7 @@ function sendMail(personName, emailId, mobileNumber, subject, message) {
 
     const options = {
         from: 'AV-Project',
-        to: 'gdisendra@gmail.com,avchamps1@gmail.com',
+        to: 'avchamps1@gmail.com',
         subject: "Contact Us Notification",
         html: `<h1>Hello, Somebody tried to contact Us</h1>
             <p>Person Name: ${name}</p>
