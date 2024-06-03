@@ -172,7 +172,7 @@ router.post('/insertCommunity', upload.single('image'), (req, res) => {
                         console.error('Error inserting community_questions:', err);
                         return res.status(500).json({ error: 'Error inserting seller info' });
                     }
-                    return res.json({ status: true, message: 'Question posted successfully' });
+                    return res.json({ status: true, message: 'Posted Successfully' });
                 });
             })
             .catch((err) => {
@@ -283,7 +283,7 @@ router.post('/deleteCommunityRecords', (req, res) => {
   
       console.log('Records Deleted Successfully');
       const affectedRows = results ? results.affectedRows : 0;
-      res.json({ status: true, affectedRows, message: 'Records successfully deleted' });
+      res.json({ status: true, affectedRows, message: 'Deleted Successfully' });
     });
   });
   

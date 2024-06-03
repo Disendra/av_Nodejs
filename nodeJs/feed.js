@@ -73,10 +73,8 @@ router.post('/insertEvent', (req, res) => {
   if (!startDate.isValid() || !endDate.isValid()) {
     return res.status(400).send({ status: false, message: 'Invalid date format. Use YYYY-MM-DD.' });
   }
-
   // Create an array to hold all the insert promises
   const insertPromises = [];
-
   // Loop through each date in the range
   for (let date = startDate; date.isSameOrBefore(endDate); date.add(1, 'days')) {
     const data = {
@@ -85,7 +83,6 @@ router.post('/insertEvent', (req, res) => {
       website_Url,
       dltFeedDate,
     };
-
     // Create a promise for each insert query
     const insertPromise = new Promise((resolve, reject) => {
       const sql = 'INSERT INTO events SET ?';
@@ -96,11 +93,9 @@ router.post('/insertEvent', (req, res) => {
         resolve(result);
       });
     });
-
     // Push the promise to the array
     insertPromises.push(insertPromise);
   }
-
   // Execute all insert queries
   Promise.all(insertPromises)
     .then(() => {
@@ -111,6 +106,43 @@ router.post('/insertEvent', (req, res) => {
       res.status(500).send({ status: false, message: err.message });
     });
 });
+
+router.get('/getTradeShow', (req, res) => {
+  const sql = 'SELECT * FROM tradeShow';
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      return res.status(500).send({ status: false, message: err.message });
+    } else {
+      return res.send({
+        status: true,
+        records: result,
+        message: 'Details Fetched Successfully'
+      });
+    }
+  });
+}); 
+
+
+router.post('/insertTradeShow', (req, res) => {
+  const { title, website_Url, dltFeedDate } = req.body;
+  const createdDate = new Date();
+  const data = { title,website_Url, dltFeedDate,createdDate };
+
+  const sql = 'INSERT INTO tradeShow SET ?';
+
+  db.query(sql, data, (err, result) => {
+    if (err) {
+      console.log(err);
+      return res.status(500).send({ status: false, message: err.message });
+    } else {
+      return res.send({ status: true, message: 'TradeShow Inserted Successfully' });
+    }
+  });
+});
+
+
+
 
 router.get('/getMacData/:sysAddress', async (req, res) => {
   try {
@@ -164,19 +196,24 @@ function sendMail(eventName, eventUrl, startDate, endDate) {
 
 const deleteExpiredRecords = () => {
   const currentDate = new Date().toISOString().slice(0, 10); // Get current date in YYYY-MM-DD format
-  const deleteSql = `DELETE FROM Community_Announcements WHERE dltFeedDate = '${currentDate}'`;
-
-  db.query(deleteSql, (err, result) => {
-    if (err) {
-      console.error('Error deleting expired records:', err);
-    } else {
-      console.log('Expired records deleted successfully.');
-    }
+  const deleteQueries = [
+    `DELETE FROM Community_Announcements WHERE dltFeedDate = '${currentDate}'`,
+    `DELETE FROM events WHERE dltFeedDate = '${currentDate}'`,
+    `DELETE FROM tradeShow WHERE dltFeedDate = '${currentDate}'`
+  ];
+  deleteQueries.forEach((deleteSql) => {
+    db.query(deleteSql, (err, result) => {
+      if (err) {
+        console.error('Error deleting expired records:', err);
+      } else {
+        console.log('Expired records deleted successfully from table:', deleteSql.split(' ')[2]);
+      }
+    });
   });
 };
 
 // Schedule the task to run every day at midnight (00:00)
-cron.schedule('58 23 * * *', () => {
+cron.schedule('58 11 * * *', () => {
   deleteExpiredRecords();
 });
 

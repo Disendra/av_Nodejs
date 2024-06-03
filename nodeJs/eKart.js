@@ -47,9 +47,6 @@ router.get('/getCartData', (req, res) => {
 });
 
 
-
-
-
 router.get('/getUploadData/:emailId', (req, res) => {
   const emailId = req.params.emailId;
   const offset = parseInt(req.query.offset) || 0;

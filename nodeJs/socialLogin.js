@@ -8,6 +8,7 @@ const db = require('./dbConnection');
 const fetch = require('node-fetch2');
 const crypto = require('crypto');
 const cors = require('cors');
+const nm = require('nodemailer');
 
 router.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 const secretKey = crypto.randomBytes(32).toString('hex');
@@ -198,7 +199,6 @@ router.get('/auth/facebook/callback', (req, res) => {
     });
 });
 
-
 function insertUserData(userData, jwtSessionToken) {
   console.log('New', userData);
   const { email, name, given_name, family_name, picture } = userData;
@@ -213,6 +213,7 @@ function insertUserData(userData, jwtSessionToken) {
     jwtToken: jwtSessionToken
   };
 
+  const checkEmailSql = 'SELECT COUNT(*) AS count FROM signup_table WHERE emailId = ?';
   const sql = `
     INSERT INTO signup_table 
       (emailId, fullName, firstName, lastName, signupDate, imagePath, jwtToken) 
@@ -228,12 +229,73 @@ function insertUserData(userData, jwtSessionToken) {
   `;
   const values = [email, data.fullName, data.firstName, data.lastName, data.signupDate, data.imagePath, data.jwtToken];
 
+  db.query(checkEmailSql, [email], (err, result) => {
+    if (err) {
+      console.error('Error checking email existence:', err);
+      return;
+    }
+    const emailExists = result[0].count > 0;
+    if (!emailExists) {
+      console.log('New user detected:', email);
+      sendMail(email);
+    }
+  })
+
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error('Error inserting or updating user data:', err);
       return;
     }
     console.log('User data inserted or updated successfully:', result);
+  });
+}
+
+function sendMail(email) {
+  const transporter = nm.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.GMAIL_USERNAME,
+        pass: process.env.GMAIL_PASSWORD 
+    }
+  });
+  const options = {
+      from: 'AVChamps.com',
+      to: email,
+      subject: "Welcome to the AV CAMPS Community!",
+        html: `
+            <h1>Welcome Email</h1>
+            <p><strong>Sub: Welcome to the AV CAMPS Community!</strong></p>
+            <p>Dear User,</p>
+            <p>Welcome to the AV CHAMPS Community!</p>
+            <p>We are thrilled to have you join our vibrant and diverse community. Your registration marks the beginning of an exciting journey where you can connect, learn, and grow with fellow members who share your interests and passions.</p>
+            <p>As a new member, here’s what you can look forward to:</p>
+            <ul>
+                <li>Engaging Discussions: Join conversations on topics that matter to you and share your insights with like-minded individuals.</li>
+                <li>Exclusive Resources: Access a wealth of articles, tutorials, and guides to enhance your knowledge and skills.</li>
+                <li>Events and Webinars: Participate in events and webinars hosted by industry experts and community leaders.</li>
+                <li>Support and Collaboration: Get help and advice from experienced members and collaborate on projects.</li>
+            </ul>
+            <p>To get started, we recommend you:</p>
+            <ol>
+                <li>Complete Your Profile: Add details about yourself to help others get to know you better.</li>
+                <li>Contribute to Community: Browse through the various posts and join discussions that pique your interest.</li>
+                <li>Explore AV Calculators: Where predefined calculators are available to simplify complex AV calculations.</li>
+            </ol>
+            <p>If you have any questions or need assistance, our support team is here to help. Feel free to reach out to us at <a href="mailto:hello@avchamps.com">hello@avchamps.com</a>.</p>
+            <p>Once again, welcome to the AV CHAMPS Community. We are excited to have you with us and look forward to your active participation!</p>
+            <p>Best regards,</p>
+            <p>AV CHAMPS</p>
+            <p><a href="https://avchamps.com/">https://avchamps.com/</a></p>
+        `
+  };
+  transporter.sendMail(options, function (error, info) {
+      if (error) {
+          console.log(error);
+      } else {
+          console.log("Email sent");
+      }
   });
 }
 
